@@ -1,0 +1,378 @@
+WILDCARDS, SHELL EXPANSION, REGEX, GREP, SED
+
+Wildcards
+
+--> A shell attribute that can be used with any command that accepts filenames
+    as arguments.
+
+\               Escape char.
+*               Matches any character(s)  ex: echo D*    echo .[!.]* (all hidden)
+?               Matches any single character
+!               Not
+[characters]    Matches any character that is a member of the set characters
+[!characters]   Matches any character that is not a member of the set
+                characters
+[[:class:]]     Matches any character that is a member of the specified
+                class
+
+--> POSIX classes:
+
+[:alnum:]       The alphanumeric characters. In ASCII, equivalent to:
+                [A-Za-z0-9]
+[:word:]        The same as [:alnum:], with the addition of the underscore
+                (_) character.
+[:alpha:]       The alphabetic characters. In ASCII, equivalent to:
+                [A-Za-z]
+[:blank:]       Includes the space and tab characters.
+[:cntrl:]       The ASCII control codes. Includes the ASCII characters 0
+                through 31 and 127.
+[:digit:]       The numerals zero through nine.
+[:graph:]       The visible characters. In ASCII, it includes characters 33
+                through 126.
+[:lower:]       The lowercase letters.
+[:punct:]       The punctuation characters. In ASCII, equivalent to:
+                [-!"#$%&'()*+,./:;<=>?@[\\\]_`{|}~]
+[:print:]       The printable characters. All the characters in [:graph:]
+                plus the space character.
+[:space:]       The whitespace characters including space, tab, carriage
+                return, newline, vertical tab, and form feed. In ASCII,
+                equivalent to: [ \t\r\n\v\f]
+[:upper:]       The uppercase characters.
+[:xdigit:]      Characters used to express hexadecimal numbers. In ASCII,
+                equivalent to: [0-9A-Fa-f]
+
+________________________________________________________________________________
+
+Shell Expansion
+
+    --> Pathname expansion
+
+        --> echo *              all files
+        --> echo D*             all files starting with D
+        --> echo *s             all files ending with s
+        --> echo [[:upper:]]*   all files starting with uppercase letter
+        --> echo .[!.]*         all hidden
+
+    --> Tilde expansion
+
+        --> echo ~              expands to home path
+
+    --> Arithmetic expansion
+
+        --> $((expression))
+
+        +   Addition
+        -   Subtraction
+        *   Multiplication
+        /   Division (but remember, since expansion only supports integer
+            arithmetic, results are integers.)
+         %  Modulo, which simply means, “ remainder.”
+        **  Exponentiation
+
+        --> Ex:  echo $(($((5**2)) * 3))
+
+    --> Brace expansion
+
+        --> Ex: echo Front-{A,B,C}-Back gives 
+                Front-A-Back Front-B-Back Front-C-Back
+
+        --> echo Number_{1..5} gives Number_1 Number_2 Number_3 Number_4 Number_5
+            echo Number{1..5} gives Number1 Number2 Number3 Number4 Number5
+            echo Number {1..5} gives Number 1 2 3 4 5
+            echo 'Number '{1..5} gives Number 1 Number 2 Number 3 Number 4 Number 5
+            echo a{A{1,2},B{3,4}}b gives aA1b aA2b aB3b aB4b
+            echo {2007..2008}-{01..6} gives 2007-01 2007-02 2007-03 2007-04 2007-05 
+                        2007-06 2008-01 2008-02 2008-03 2008-04 2008-05 2008-06
+
+    --> Parameter expansion
+
+        --> expands environment variables
+
+        --> echo $PATH expands to for example /home/dutch
+
+    -->Command substitution
+
+        --> echo $(ls) gives non-formatted list of ls
+        --> ls -l $(which terminator) gives 
+                -rwxr-xr-x 1 root root 4236 Apr 30  2013 /usr/bin/terminator
+
+________________________________________________________________________________
+        
+
+REGEX (BRE)
+
+Grep
+
+    grep [options] regex [file...]
+
+    -i  Ignore case. Do not distinguish between upper and lower case
+        characters. 
+    -v  Invert match. Normally, grep prints lines that contain a match.
+        This option causes grep to print every line that does not contain a
+        match. 
+    -c  Print the number of matches (or non-matches if the -v option is
+        also specified) instead of the lines themselves. 
+    -l  Print the name of each file that contains a match instead of the lines
+        themselves. 
+    -L  Like the -l option, but print only the names of files that do not
+        contain matches. 
+    -n  Prefix each matching line with the number of the line within the
+        file. 
+    -h  For multi-file searches, suppress the output of filenames. 
+    -r  Recursive.
+
+    --> Ex: 
+
+        --> ls /usr/bin | grep zip  gives all filenames containing zip
+        --> ls /usr/bin | grep ^zip gives all filenames beginning with zip
+        --> ls /usr/bin | grep zip$ gives all files ending with zip
+        --> ls /usr/bin | grep .zip gives all not beginning with zip - this
+                is not a negator, but just puts a char. before the string
+        --> ls /usr/bin | grep zip. gives all filenames that do not end in zip
+                - again, not a strict delimiter, but just requires some char. 
+                after zip
+
+    metacharacters
+
+    --> ^ $ . [ ] - * are BRE
+        
+
+    --> must use quotes to prevent expansion as described above
+
+        --> The any character - the .  includes a space
+
+        --> The anchors ^ and $
+            --> Ex: grep '^Table' filename gives all lines that start with Table
+            --> grep 'table$" filename gives all lines that end with table
+                (don't forget punctuation at end of lines.)
+            --> grep -i '^..j.r$' /usr/share/dict/words gives any word in 
+                dictionary that starts with any two letter, third letter j, 
+                then any other letter, ending with an r
+            -->
+                -   ^A 	"A" at the beginning of a line
+                -   A$ 	"A" at the end of a line
+                -   A^ 	"A^" anywhere on a line
+                -   $A 	"$A" anywhere on a line
+                -   ^^ 	"^" at the beginning of a line
+                -   $$ 	"$" at the end of a line
+
+        --> The Brackets
+
+            --> Matches a set of char. to be matched, including the char.
+                that would otherwise be metachar.
+
+            --> Two "inside bracket" metachar:
+
+                --> the ^, which negates if directly after first bracket
+
+                    --> Ex: grep '[^Tt]able' filename gives any word in the file
+                        that contains able but does not start with a t or T; 
+                        note that grep prints a whole line, so if line contains 
+                        Table and able, the line will still print
+
+                --> the -, which separates two chars. in a range
+
+                    --> Ex: grep '^[ABCDEFGHIJKLMNOPQRSTUVWXZY]' filename
+                        shows all lines beginning with a capital letter
+                    --> same, using "-": grep '^[A-Z] filename
+                        "-" loses special feature if directly after first 
+                        bracket or escaped
+                    -->
+                        [] 	The characters "[]"
+                        [0] 	The character "0"
+                        [0-9] 	Any number
+                        [^0-9] 	Any character other than a number
+                        [-0-9] 	Any number or a "-"
+                        [0-9-] 	Any number or a "-"
+                        [^-0-9] 	Any character except a number or a "-"
+                        []0-9] 	Any number or a "]"
+                        [0-9]] 	Any number followed by a "]"
+                        [0-9-z] 	Any number,	or any character between "9" and "z".
+                        [0-9\-a\]] 	Any number, or 	a "-", a "a", or a "]"
+
+    ALSO NOTE THE USE OF THE POSIX CHAR. CLASSES FROM ABOVE
+
+    --> grep '^[[:upper:]]' filename gives all lines starting with capital letter
+
+________________________________________________________________________________
+
+REGEX (ERE)
+
+    --> { } ? * + ( ) | , \ are ERE
+
+    --> the ( , )   {   and   }  characters are treated as metacharacters in BRE 
+        if they are escaped with a backslash, whereas with ERE, preceding       
+        any metacharacter with a backslash causes it to be treated as a literal.
+
+    --> must use egrep or grep -E  (egrep deprecated)
+
+    --> Alternation - the | char (not pipe)
+
+        --> | meta char. means either or both
+        --> Ex: echo "AAA" | egrep 'AAA|BBB|DDD' gives AAA but "CCC" would give nothing
+        --> grep -E '^(bz|gz|zip)' filename gives any line starting with any of them
+        --> whereas grep -E '^bz|gz|zip' dirlist*.txt would need to start with bz
+            or contains either gz or zip
+
+    --> Quantifiers (Ex below: (561) 624-1234 OR 561 624-1234)
+
+        --> the ? char
+
+            --> match an element zero or one time
+--> echo "(555) 123-4567" | grep -E '^\(?[0-9][0-9][0-9]\)? [0-9][0-9][0-9]-
+											[0-9][0-9][0-9][0-9]$'
+        
+            --> the + char
+
+            --> match an element one or more times
+--  echo "This that" | grep -E '^([[:alpha:]]+ ?)+$'
+
+        --> the * char
+
+            --> match anything any number of times, including zero times
+--> echo "This works." | grep -E '[[:upper:]][[:upper:][:lower:] ]*\.'
+
+        --> the {} char
+            --> match an element a specific number of times
+                -->
+                    {n} Match the preceding element if it occurs exactly n times.
+                    {n,m} Match the preceding element if it occurs at least n 
+                    times, but no more than m times.
+                    {n,} Match the preceding element if it occurs n or more times.
+                    {,m} Match the preceding element if it occurs no more than m times.
+________________________________________________________________________________
+
+SED
+
+--> almost any char. can be the delimiter, i.e., /, >, *, :, _, etc; but must be 
+    first char. after the command
+    --> ex:  echo "front" | sed 's/front/back/' =  echo "front" | sed 's:front:back:'
+
+--> most commands can be preceeded by an adress to limit lines edited
+    --> ex: echo "front" | sed '1s/front/back/' - limited to first line
+    --> common addressing schemes:
+        --> n           A line number where n is a positive integer.
+            $           The last line.
+            /regexp/    Lines matching a POSIX basic regular expression. Note that the
+                        regular expression is delimited by slash characters. Optionally,
+                        the regular expression may be delimited by an alternate
+                        character, by specifying the expression with \cregexpc,
+                        where c is the alternate character.
+            addr1,addr2 A range of lines from addr1 to addr2, inclusive. Addresses may
+                        be any of the single address forms above.
+                        first~step Match the line represented by the number first, then 
+                        each subsequent line at step intervals. For example 1~2 refers to
+                        each odd numbered line, 5~5 refers to the fifth line and every
+                        fifth line thereafter.
+            addr1,+n    Match addr1 and the following n lines.
+            addr!       Match all lines except addr, which may be any of the forms above.
+
+        --> -n ex:
+            --> sed -n '1,5p' regex.play  gives first five lines of file
+                        (n is line number and p is print to screen
+
+        --> /regexp/ ex:
+            --> sed -n '/USENET/p' regex.play gives all lines with regex; like grep
+
+--> basic editing commands:
+
+    --> =                       Output current line and number.
+                                --> ex: echo "yes" | sed =  gives 1 and yes
+        a                       Append text after the current line.
+        d                       Delete the current line.
+        i                       Insert text in front of the current line.
+        p                       Print the current line. By default, sed prints every
+                                line and only edits lines that match a specified
+                                address within the file. The default behavior can
+                                be overridden by specifying the -n option.
+        q                       Exit sed without processing any more lines. If the
+                                -n option is not specified, output the current line.
+        Q                       Exit sed without processing any more lines.
+        s/regexp/replacement/   Substitute the contents of replacement wherever
+                                regexp is found. replacement may include the
+                                special character &, which is equivalent to the text
+                                matched by regexp. In addition, replacement may
+                                include the sequences \1 through \9, which are
+                                the contents of the corresponding subexpressions
+                                in regexp. For more about this, see the discussion
+                                of back references below. After the trailing slash
+                                following replacement, an optional flag may be
+                                specified to modify the s command’s behavior.
+
+                                Note default for s cmd is first instance in the 
+                                line only; to apply to all instances, use the g flag; ex:
+                                echo "aaabbbccc" | sed 's/b/B/g'  if no g flag
+                                used, would only change first b to B
+                                
+    
+        y/set1/set2             Perform transliteration by converting characters
+                                from set1 to the corresponding characters in set2.
+                                Note that unlike tr, sed requires that both sets be
+                                of the same length.
+
+        e script                add the script to the commands to be executed
+
+THE S COMMAND
+
+--> formal format:  sed 's/day/night/' <old     >new  (from old to new)(stdin to stdout)
+    --> ex:  echo day | sed 's/day/night/'
+
+or to change just input file
+
+Syntax:
+
+sed 'ADDRESSs/REGEXP/REPLACEMENT/FLAGS' filename
+sed 'PATTERNs/REGEXP/REPLACEMENT/FLAGS' filename, where 
+
+    s           is substitute command
+    /           is a delimiter
+    REGEXP      is regular expression to match
+    REPLACEMENT is a value to replace
+
+FLAGS can be any of the following
+
+    g       Replace all the instance of REGEXP with REPLACEMENT
+    n       Could be any number,replace nth instance of the REGEXP with REPLACEMENT.
+    p       If substitution was made, then prints the new pattern space.
+    i       match REGEXP in a case-insensitive manner.
+    w file  If substitution was made, write out the result to the given file.
+    
+--> rules:
+
+    There are four parts to this substitute command:
+
+    s	        Substitute command
+    /../../	    Delimiter
+    one	        Regular Expression Pattern Search Pattern
+    ONE	        Replacement string
+
+    (The search pattern is on the left hand side and the replacement string 
+    is on the right hand side.)
+
+--> the & matching cmd
+
+    Ex: want to add parens around a string 
+            echo "abcde" | sed 's/abc/(abc)/'  gives (abc)de
+
+    but if don't know what string is, use & in replacement regex
+            echo "abcde" | sed 's/abc/(&)/' gives same (abc)de; more generally,
+            echo "abcde" | sed 's/[a-z]*/(&)/' gives (abcde)
+
+STOPPED HERE - GO TO GEEK STUFF TUTORIALS (THIS SO FAR INCLUDED SHOTTS' SED AND 
+SOME OF BARNETT, WHICH IS NOW IN RECYCLE-PRINT DUE TO INCOMPATABILITY.
+
+Real-world examples:
+
+from Debian nvidia install wiki:
+
+# aptitude -r install linux-headers-2.6-$(uname -r|sed 's,[^-]*-[^-]*-,,') \
+nvidia-kernel-legacy-96xx-dkms
+
+from LFS cross binutils:
+
+# sed -i -e 's/@colophon/@@colophon/' \
+       -e 's/doc@cygnus.com/doc@@cygnus.com/' bfd/doc/bfd.texinfo
+            
+
+
+
